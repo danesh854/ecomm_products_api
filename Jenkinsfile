@@ -6,6 +6,8 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-southeast-1'
         IMAGE_NAME = 'daneshkabade45/demo'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        DEPLOYMENT_NAME = 'productsapideployment'
+        CONTAINER_NAME = 'products-container'
     }
 
     tools {
@@ -66,11 +68,11 @@ pipeline {
                 kubectl apply -f Deployment.yml
 
                 echo "🚀 Updating deployment image..."
-                kubectl set image deployment/products-deployment \
-                products-container=$IMAGE_NAME:$IMAGE_TAG
+                kubectl set image deployment/$DEPLOYMENT_NAME \
+                $CONTAINER_NAME=$IMAGE_NAME:$IMAGE_TAG
 
                 echo "⏳ Waiting for rollout..."
-                kubectl rollout status deployment/products-deployment
+                kubectl rollout status deployment/$DEPLOYMENT_NAME
                 '''
             }
         }

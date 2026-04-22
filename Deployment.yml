@@ -15,7 +15,7 @@ spec:
      app: products
   spec:
     containers:
-    - name: productscontainer
+    - name: products-container
       image: ashokit/products
       ports:
       - containerPort: 8080

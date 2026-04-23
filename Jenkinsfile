@@ -6,8 +6,6 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-southeast-1'
         IMAGE_NAME = 'daneshkabade45/demo'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        DEPLOYMENT_NAME = 'productsapideployment'
-        CONTAINER_NAME = 'products-container'
     }
 
     tools {
@@ -18,11 +16,11 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/danesh854/ecomm_products_api.git'
+                git 'https://github.com/danesh854/ecomm_products_api.git'
             }
         }
 
-        stage('Build JAR') {
+        stage('Build WAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -50,29 +48,22 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
+        stage('Deploy to Kubernetes (Backend Namespace)') {
             steps {
                 sh '''
                 set -e
 
                 export KUBECONFIG=/var/lib/jenkins/.kube/config
-                export AWS_DEFAULT_REGION=ap-southeast-1
 
-                echo "🔍 Checking AWS identity..."
-                aws sts get-caller-identity
+                echo "Applying manifests to backend namespace..."
+                kubectl apply -f Deployment.yml -n backend
 
-                echo "🔄 Updating kubeconfig..."
-                aws eks update-kubeconfig --region ap-southeast-1 --name my-cluster
+                echo "Updating deployment image..."
+                kubectl set image deployment/productsapideployment \
+                products-container=$IMAGE_NAME:$IMAGE_TAG -n backend
 
-                echo "📦 Applying Kubernetes manifests..."
-                kubectl apply -f Deployment.yml
-
-                echo "🚀 Updating deployment image..."
-                kubectl set image deployment/$DEPLOYMENT_NAME \
-                $CONTAINER_NAME=$IMAGE_NAME:$IMAGE_TAG
-
-                echo "⏳ Waiting for rollout..."
-                kubectl rollout status deployment/$DEPLOYMENT_NAME
+                echo "Waiting for rollout..."
+                kubectl rollout status deployment/productsapideployment -n backend
                 '''
             }
         }
